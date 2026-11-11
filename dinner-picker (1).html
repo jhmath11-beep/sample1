@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>오늘 저녁 뭐 먹지?</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+:root {
+  --primary: #14b8a6;
+  --primary-strong: #0d9488;
+  --primary-soft: #ccfbf1;
+  --accent: #f97316;
+  --accent-soft: #ffedd5;
+
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --border: #e2e8f0;
+  --text: #0f172a;
+  --text-muted: #64748b;
+  --text-subtle: #94a3b8;
+
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+
+  --fs-xs: 0.75rem; --fs-sm: 0.875rem; --fs-base: 1rem; --fs-lg: 1.125rem;
+  --fs-xl: 1.5rem; --fs-2xl: 2rem; --fs-3xl: 3rem;
+
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px;
+  --sp-6: 24px; --sp-8: 32px; --sp-12: 48px; --sp-16: 64px;
+
+  --r-sm: 8px; --r-md: 12px; --r-lg: 16px; --r-full: 999px;
+
+  --shadow-sm: 0 1px 2px rgba(15,23,42,.04), 0 1px 3px rgba(15,23,42,.06);
+  --shadow-md: 0 4px 12px rgba(15,23,42,.06), 0 2px 4px rgba(15,23,42,.04);
+
+  --container: 640px;
+}
+* { box-sizing: border-box; margin: 0; }
+body {
+  font-family: Pretendard, -apple-system, "Segoe UI", "Malgun Gothic", sans-serif;
+  color: var(--text); background: var(--bg);
+  font-size: var(--fs-base); line-height: 1.6; -webkit-font-smoothing: antialiased;
+}
+.wrap { max-width: var(--container); margin: 0 auto; padding: var(--sp-8) var(--sp-4) var(--sp-16); }
+
+header { text-align: center; margin-bottom: var(--sp-8); }
+header .eyebrow { color: var(--primary-strong); font-weight: 600; font-size: var(--fs-sm); }
+h1 { font-size: var(--fs-2xl); line-height: 1.25; margin-top: var(--sp-1); }
+header p { color: var(--text-muted); margin-top: var(--sp-2); }
+
+/* 슬롯 — 시그니처 요소 */
+.stage {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-lg); box-shadow: var(--shadow-md);
+  padding: var(--sp-8) var(--sp-6); text-align: center;
+}
+.slot {
+  height: 132px; overflow: hidden; position: relative;
+  border-radius: var(--r-md); background: var(--bg);
+  border: 1px solid var(--border);
+}
+.slot::before, .slot::after {
+  content: ""; position: absolute; left: 0; right: 0; height: 36px; z-index: 2; pointer-events: none;
+}
+.slot::before { top: 0; background: linear-gradient(var(--bg), transparent); }
+.slot::after { bottom: 0; background: linear-gradient(transparent, var(--bg)); }
+.reel { will-change: transform; }
+.reel-item {
+  height: 132px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.reel-item .emoji { font-size: var(--fs-3xl); line-height: 1.1; }
+.reel-item .name { font-size: var(--fs-xl); font-weight: 700; }
+.slot.idle .name { color: var(--text-subtle); font-weight: 600; }
+
+.result-meta { min-height: 56px; margin-top: var(--sp-4); }
+.result-meta .tags { display: flex; gap: var(--sp-2); justify-content: center; flex-wrap: wrap; }
+.result-meta .tip { color: var(--text-muted); font-size: var(--fs-sm); margin-top: var(--sp-2); }
+.result-meta.pop { animation: pop .35s ease-out; }
+@keyframes pop { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+.actions { display: flex; gap: var(--sp-3); justify-content: center; margin-top: var(--sp-4); flex-wrap: wrap; }
+
+.btn {
+  min-height: 48px; padding: 0 var(--sp-6); border: 0; border-radius: var(--r-md);
+  background: var(--primary); color: #fff; font-size: var(--fs-lg); font-weight: 700;
+  cursor: pointer; transition: background .15s, transform .05s; font-family: inherit;
+}
+.btn:hover { background: var(--primary-strong); }
+.btn:active { transform: translateY(1px); }
+.btn:disabled { opacity: .5; cursor: default; }
+.btn--big { min-width: 200px; min-height: 56px; }
+.btn--ghost {
+  background: transparent; color: var(--text-muted); font-size: var(--fs-base); font-weight: 600;
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+.btn--ghost:hover { background: var(--bg); color: var(--text); }
+
+.badge {
+  display: inline-flex; align-items: center; gap: var(--sp-1);
+  padding: var(--sp-1) var(--sp-3); border-radius: var(--r-full);
+  background: var(--primary-soft); color: var(--primary-strong);
+  font-size: var(--fs-sm); font-weight: 600;
+}
+.badge--accent { background: var(--accent-soft); color: #c2410c; }
+
+/* 필터 */
+section.filters { margin-top: var(--sp-12); }
+.group + .group { margin-top: var(--sp-6); }
+.group h2 { font-size: var(--fs-base); font-weight: 700; margin-bottom: var(--sp-3); display: flex; align-items: baseline; gap: var(--sp-2); }
+.group h2 small { color: var(--text-subtle); font-weight: 500; font-size: var(--fs-sm); }
+.chips { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+.chip {
+  min-height: 44px; padding: 0 var(--sp-4); border-radius: var(--r-full);
+  border: 1px solid var(--border); background: var(--surface); color: var(--text-muted);
+  font-size: var(--fs-base); font-weight: 600; cursor: pointer; font-family: inherit;
+  transition: all .15s;
+}
+.chip:hover { border-color: var(--primary); color: var(--text); }
+.chip[aria-pressed="true"] { background: var(--primary); border-color: var(--primary); color: #fff; }
+
+.count { color: var(--text-muted); font-size: var(--fs-sm); margin-top: var(--sp-4); }
+.count strong { color: var(--text); }
+
+/* 오늘 패스한 메뉴 */
+section.history { margin-top: var(--sp-12); }
+section.history h2 { font-size: var(--fs-base); font-weight: 700; margin-bottom: var(--sp-3); }
+.history-list { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+.history-list .empty { color: var(--text-subtle); font-size: var(--fs-sm); }
+.pass-chip {
+  display: inline-flex; align-items: center; gap: var(--sp-1);
+  padding: var(--sp-1) var(--sp-3); border-radius: var(--r-full);
+  background: var(--surface); border: 1px dashed var(--border); color: var(--text-muted);
+  font-size: var(--fs-sm); text-decoration: line-through;
+}
+
+button:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--primary-soft), 0 0 0 1px var(--primary); }
+
+@media (min-width: 768px) {
+  .wrap { padding-top: var(--sp-16); }
+  h1 { font-size: 2.5rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow" id="today"></div>
+    <h1>오늘 저녁 뭐 먹지?</h1>
+    <p>조건만 고르고 버튼을 누르세요. 고민은 기계가 합니다.</p>
+  </header>
+
+  <div class="stage">
+    <div class="slot idle" id="slot">
+      <div class="reel" id="reel">
+        <div class="reel-item"><span class="emoji">🍽️</span><span class="name">두구두구…</span></div>
+      </div>
+    </div>
+    <div class="result-meta" id="meta"></div>
+    <div class="actions">
+      <button class="btn btn--big" id="spin">메뉴 뽑기</button>
+    </div>
+    <div class="actions" id="after" hidden>
+      <button class="btn btn--ghost" id="pass">이건 패스, 다시!</button>
+      <button class="btn btn--ghost" id="search">근처 맛집 찾기</button>
+    </div>
+  </div>
+
+  <section class="filters">
+    <div class="group">
+      <h2>종류 <small>여러 개 선택 가능</small></h2>
+      <div class="chips" id="catChips"></div>
+    </div>
+    <div class="group">
+      <h2>오늘의 기분 <small>고르지 않으면 전부</small></h2>
+      <div class="chips" id="moodChips"></div>
+    </div>
+    <div class="group">
+      <h2>어떻게 먹을까</h2>
+      <div class="chips" id="wayChips"></div>
+    </div>
+    <p class="count" id="count"></p>
+  </section>
+
+  <section class="history">
+    <h2>오늘 패스한 메뉴</h2>
+    <div class="history-list" id="history"><span class="empty">아직 없어요. 마음에 안 들면 ‘패스’를 눌러 후보에서 빼세요.</span></div>
+  </section>
+</div>
+
+<script>
+// 메뉴 데이터: cat=종류, mood=기분 태그, way=먹는 방식(배달/외식/집밥), tip=한 줄 코멘트
+const MENUS = [
+  { n:"김치찌개", e:"🍲", cat:"한식", mood:["국물","든든","매콤"], way:["외식","집밥","배달"], tip:"돼지고기 듬뿍, 라면사리 추가는 필수" },
+  { n:"된장찌개", e:"🥘", cat:"한식", mood:["국물","가볍게"], way:["외식","집밥"], tip:"두부랑 애호박 넣으면 끝" },
+  { n:"삼겹살", e:"🥓", cat:"한식", mood:["든든"], way:["외식","집밥"], tip:"수요일엔 고기가 정답일 때가 있죠" },
+  { n:"제육볶음", e:"🌶️", cat:"한식", mood:["매콤","든든"], way:["외식","배달","집밥"], tip:"상추쌈에 밥 한 공기 순삭" },
+  { n:"비빔밥", e:"🥗", cat:"한식", mood:["가볍게"], way:["외식","집밥"], tip:"냉장고 털이에도 딱" },
+  { n:"순대국", e:"🍜", cat:"한식", mood:["국물","든든"], way:["외식","배달"], tip:"들깨가루 팍팍" },
+  { n:"감자탕", e:"🦴", cat:"한식", mood:["국물","든든","매콤"], way:["외식","배달"], tip:"마무리 볶음밥까지 코스로" },
+  { n:"칼국수", e:"🍜", cat:"한식", mood:["국물","가볍게"], way:["외식"], tip:"쌀쌀한 날 저녁엔 뜨끈하게" },
+  { n:"닭갈비", e:"🍗", cat:"한식", mood:["매콤","든든"], way:["외식"], tip:"치즈 추가, 볶음밥 추가" },
+  { n:"보쌈", e:"🥬", cat:"한식", mood:["든든"], way:["배달","외식"], tip:"김장철엔 보쌈이 진리" },
+  { n:"떡볶이", e:"🍢", cat:"분식", mood:["매콤","가볍게"], way:["배달","외식","집밥"], tip:"튀김 섞어서 순대까지" },
+  { n:"김밥 + 라면", e:"🍙", cat:"분식", mood:["가볍게","국물"], way:["외식","집밥"], tip:"실패 없는 조합" },
+  { n:"짜장면", e:"🍝", cat:"중식", mood:["든든"], way:["배달","외식"], tip:"탕수육 小 하나 추가 어때요?" },
+  { n:"짬뽕", e:"🦐", cat:"중식", mood:["국물","매콤"], way:["배달","외식"], tip:"해장도 되고 저녁도 되고" },
+  { n:"마라탕", e:"🥵", cat:"중식", mood:["국물","매콤"], way:["배달","외식"], tip:"맵기 1단계부터 도전" },
+  { n:"양꼬치", e:"🍢", cat:"중식", mood:["든든"], way:["외식"], tip:"칭따오 한 병 곁들여" },
+  { n:"초밥", e:"🍣", cat:"일식", mood:["가볍게"], way:["외식","배달"], tip:"오늘은 나에게 주는 선물" },
+  { n:"돈카츠", e:"🍱", cat:"일식", mood:["든든"], way:["외식","배달"], tip:"등심 vs 안심, 고민은 둘 다" },
+  { n:"라멘", e:"🍜", cat:"일식", mood:["국물","든든"], way:["외식"], tip:"면 굵기는 바리카타로" },
+  { n:"우동", e:"🍥", cat:"일식", mood:["국물","가볍게"], way:["외식","집밥"], tip:"튀김 하나 올리면 완성" },
+  { n:"규동", e:"🍚", cat:"일식", mood:["든든","가볍게"], way:["외식","배달"], tip:"온센타마고 추가" },
+  { n:"파스타", e:"🍝", cat:"양식", mood:["가볍게"], way:["외식","집밥","배달"], tip:"크림? 토마토? 오일? 고르는 것도 재미" },
+  { n:"피자", e:"🍕", cat:"양식", mood:["든든"], way:["배달"], tip:"콜라는 제로로 양심 챙기기" },
+  { n:"스테이크", e:"🥩", cat:"양식", mood:["든든"], way:["외식","집밥"], tip:"수고한 날엔 고기 한 덩이" },
+  { n:"샐러드", e:"🥗", cat:"양식", mood:["가볍게"], way:["배달","집밥"], tip:"가볍게, 그리고 개운하게" },
+  { n:"쌀국수", e:"🍲", cat:"아시안", mood:["국물","가볍게"], way:["외식","배달"], tip:"고수는 취향껏" },
+  { n:"팟타이", e:"🍤", cat:"아시안", mood:["가볍게"], way:["외식","배달"], tip:"땅콩가루 듬뿍" },
+  { n:"카레", e:"🍛", cat:"아시안", mood:["든든","매콤"], way:["외식","집밥","배달"], tip:"집에서 끓이면 내일 아침까지 해결" },
+  { n:"치킨", e:"🍗", cat:"패스트푸드", mood:["든든"], way:["배달"], tip:"반반은 언제나 옳다" },
+  { n:"햄버거", e:"🍔", cat:"패스트푸드", mood:["든든","가볍게"], way:["배달","외식"], tip:"감튀는 라지로" },
+  { n:"족발", e:"🐷", cat:"한식", mood:["든든"], way:["배달"], tip:"막국수 세트로 주문" },
+  { n:"부대찌개", e:"🌭", cat:"한식", mood:["국물","매콤","든든"], way:["외식","집밥","배달"], tip:"햄 많이, 라면사리 필수" },
+];
+
+const CATS = ["한식","중식","일식","양식","분식","아시안","패스트푸드"];
+const MOODS = [["국물","🍲 국물"],["매콤","🌶️ 매콤"],["든든","💪 든든하게"],["가볍게","🍃 가볍게"]];
+const WAYS = [["전체","전부 OK"],["배달","🛵 배달"],["외식","🚶 나가서"],["집밥","🏠 집에서"]];
+
+const state = { cats: new Set(CATS), moods: new Set(), way: "전체", passed: new Set(), current: null, spinning: false };
+
+const $ = id => document.getElementById(id);
+
+function makeChip(label, pressed, onClick) {
+  const b = document.createElement("button");
+  b.className = "chip"; b.textContent = label;
+  b.setAttribute("aria-pressed", pressed);
+  b.addEventListener("click", () => onClick(b));
+  return b;
+}
+
+function renderFilters() {
+  const cat = $("catChips"); cat.innerHTML = "";
+  CATS.forEach(c => cat.appendChild(makeChip(c, state.cats.has(c), b => {
+    if (state.cats.has(c)) { if (state.cats.size === 1) return; state.cats.delete(c); }
+    else state.cats.add(c);
+    b.setAttribute("aria-pressed", state.cats.has(c)); updateCount();
+  })));
+
+  const mood = $("moodChips"); mood.innerHTML = "";
+  MOODS.forEach(([k, label]) => mood.appendChild(makeChip(label, state.moods.has(k), b => {
+    state.moods.has(k) ? state.moods.delete(k) : state.moods.add(k);
+    b.setAttribute("aria-pressed", state.moods.has(k)); updateCount();
+  })));
+
+  const way = $("wayChips"); way.innerHTML = "";
+  WAYS.forEach(([k, label]) => way.appendChild(makeChip(label, state.way === k, () => {
+    state.way = k; renderFilters(); updateCount();
+  })));
+}
+
+function candidates() {
+  return MENUS.filter(m =>
+    state.cats.has(m.cat) &&
+    (state.moods.size === 0 || [...state.moods].some(x => m.mood.includes(x))) &&
+    (state.way === "전체" || m.way.includes(state.way)) &&
+    !state.passed.has(m.n)
+  );
+}
+
+function updateCount() {
+  const n = candidates().length;
+  $("count").innerHTML = n
+    ? `지금 조건으로 후보 <strong>${n}개</strong>`
+    : `조건에 맞는 메뉴가 없어요. 종류나 기분을 조금 풀어 보세요.`;
+  $("spin").disabled = n === 0;
+}
+
+function itemHTML(m) {
+  return `<div class="reel-item"><span class="emoji">${m.e}</span><span class="name">${m.n}</span></div>`;
+}
+
+function spin() {
+  if (state.spinning) return;
+  const pool = candidates();
+  if (!pool.length) { updateCount(); return; }
+  state.spinning = true;
+  $("spin").disabled = true; $("after").hidden = true;
+  $("meta").innerHTML = ""; $("meta").classList.remove("pop");
+
+  const pick = pool[Math.floor(Math.random() * pool.length)];
+  // 릴 구성: 랜덤 메뉴 여러 개 → 마지막에 결과
+  const filler = [];
+  const len = 18 + Math.floor(Math.random() * 6);
+  for (let i = 0; i < len; i++) filler.push(MENUS[Math.floor(Math.random() * MENUS.length)]);
+  const reel = $("reel");
+  reel.style.transition = "none";
+  reel.style.transform = "translateY(0)";
+  reel.innerHTML = (state.current ? itemHTML(state.current) : itemHTML({e:"🍽️", n:"두구두구…"}))
+    + filler.map(itemHTML).join("") + itemHTML(pick);
+  $("slot").classList.remove("idle");
+
+  const h = $("slot").clientHeight;
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  requestAnimationFrame(() => {
+    reel.style.transition = reduce ? "none" : "transform 2.2s cubic-bezier(.12,.75,.16,1)";
+    reel.style.transform = `translateY(-${(len + 1) * h}px)`;
+  });
+  setTimeout(() => {
+    // 결과 하나만 남겨 DOM 정리
+    reel.style.transition = "none";
+    reel.style.transform = "translateY(0)";
+    reel.innerHTML = itemHTML(pick);
+    state.current = pick; state.spinning = false;
+    showMeta(pick);
+    $("spin").disabled = false; $("spin").textContent = "다시 뽑기";
+    $("after").hidden = false;
+  }, reduce ? 50 : 2300);
+}
+
+function showMeta(m) {
+  const meta = $("meta");
+  meta.innerHTML = `
+    <div class="tags">
+      <span class="badge">${m.cat}</span>
+      ${m.mood.map(x => `<span class="badge badge--accent">${x}</span>`).join("")}
+    </div>
+    <p class="tip">${m.tip}</p>`;
+  void meta.offsetWidth; meta.classList.add("pop");
+}
+
+function pass() {
+  if (!state.current) return;
+  state.passed.add(state.current.n);
+  renderHistory(); updateCount();
+  if (candidates().length) spin();
+  else {
+    $("meta").innerHTML = `<p class="tip">더 남은 후보가 없어요. 조건을 넓히거나 패스한 메뉴를 눌러 되살리세요.</p>`;
+  }
+}
+
+function renderHistory() {
+  const box = $("history");
+  if (!state.passed.size) {
+    box.innerHTML = `<span class="empty">아직 없어요. 마음에 안 들면 ‘패스’를 눌러 후보에서 빼세요.</span>`;
+    return;
+  }
+  box.innerHTML = "";
+  state.passed.forEach(n => {
+    const b = document.createElement("button");
+    b.className = "pass-chip"; b.textContent = n; b.title = "눌러서 다시 후보에 넣기";
+    b.style.cursor = "pointer";
+    b.addEventListener("click", () => { state.passed.delete(n); renderHistory(); updateCount(); });
+    box.appendChild(b);
+  });
+}
+
+$("spin").addEventListener("click", spin);
+$("pass").addEventListener("click", pass);
+$("search").addEventListener("click", () => {
+  if (state.current) window.open("https://map.naver.com/p/search/" + encodeURIComponent(state.current.n + " 맛집"), "_blank");
+});
+document.addEventListener("keydown", e => {
+  if (e.code === "Space" && e.target === document.body) { e.preventDefault(); spin(); }
+});
+
+const d = new Date();
+$("today").textContent = `${d.getMonth()+1}월 ${d.getDate()}일 ${"일월화수목금토"[d.getDay()]}요일 저녁`;
+
+renderFilters(); updateCount();
+</script>
+</body>
+</html>
