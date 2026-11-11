@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>오늘 저녁 뭐 먹지?</title>
+<title>오늘 뭐 먹지? 점심·저녁 메뉴 뽑기</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <style>
 :root {
@@ -49,6 +49,17 @@ header { text-align: center; margin-bottom: var(--sp-8); }
 header .eyebrow { color: var(--primary-strong); font-weight: 600; font-size: var(--fs-sm); }
 h1 { font-size: var(--fs-2xl); line-height: 1.25; margin-top: var(--sp-1); }
 header p { color: var(--text-muted); margin-top: var(--sp-2); }
+.meal-toggle {
+  display: inline-flex; gap: var(--sp-1); padding: var(--sp-1);
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-full); box-shadow: var(--shadow-sm); margin-bottom: var(--sp-4);
+}
+.meal-toggle button {
+  min-height: 44px; min-width: 104px; padding: 0 var(--sp-4); border: 0; border-radius: var(--r-full);
+  background: transparent; color: var(--text-muted); font-family: inherit;
+  font-size: var(--fs-base); font-weight: 700; cursor: pointer; transition: all .15s;
+}
+.meal-toggle button[aria-pressed="true"] { background: var(--primary); color: #fff; }
 
 /* 슬롯 — 시그니처 요소 */
 .stage {
@@ -149,8 +160,12 @@ button:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--primary-soft),
 <body>
 <div class="wrap">
   <header>
+    <div class="meal-toggle" role="group" aria-label="식사 선택">
+      <button id="mealLunch" aria-pressed="false">☀️ 점심</button>
+      <button id="mealDinner" aria-pressed="false">🌙 저녁</button>
+    </div>
     <div class="eyebrow" id="today"></div>
-    <h1>오늘 저녁 뭐 먹지?</h1>
+    <h1 id="title">오늘 저녁 뭐 먹지?</h1>
     <p>조건만 고르고 버튼을 누르세요. 고민은 기계가 합니다.</p>
   </header>
 
@@ -197,20 +212,20 @@ button:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--primary-soft),
 const MENUS = [
   { n:"김치찌개", e:"🍲", cat:"한식", mood:["국물","든든","매콤"], way:["외식","집밥","배달"], tip:"돼지고기 듬뿍, 라면사리 추가는 필수" },
   { n:"된장찌개", e:"🥘", cat:"한식", mood:["국물","가볍게"], way:["외식","집밥"], tip:"두부랑 애호박 넣으면 끝" },
-  { n:"삼겹살", e:"🥓", cat:"한식", mood:["든든"], way:["외식","집밥"], tip:"수요일엔 고기가 정답일 때가 있죠" },
+  { n:"삼겹살", only:"저녁", e:"🥓", cat:"한식", mood:["든든"], way:["외식","집밥"], tip:"고생한 날엔 고기가 정답" },
   { n:"제육볶음", e:"🌶️", cat:"한식", mood:["매콤","든든"], way:["외식","배달","집밥"], tip:"상추쌈에 밥 한 공기 순삭" },
   { n:"비빔밥", e:"🥗", cat:"한식", mood:["가볍게"], way:["외식","집밥"], tip:"냉장고 털이에도 딱" },
   { n:"순대국", e:"🍜", cat:"한식", mood:["국물","든든"], way:["외식","배달"], tip:"들깨가루 팍팍" },
   { n:"감자탕", e:"🦴", cat:"한식", mood:["국물","든든","매콤"], way:["외식","배달"], tip:"마무리 볶음밥까지 코스로" },
-  { n:"칼국수", e:"🍜", cat:"한식", mood:["국물","가볍게"], way:["외식"], tip:"쌀쌀한 날 저녁엔 뜨끈하게" },
+  { n:"칼국수", e:"🍜", cat:"한식", mood:["국물","가볍게"], way:["외식"], tip:"쌀쌀한 날엔 뜨끈하게" },
   { n:"닭갈비", e:"🍗", cat:"한식", mood:["매콤","든든"], way:["외식"], tip:"치즈 추가, 볶음밥 추가" },
-  { n:"보쌈", e:"🥬", cat:"한식", mood:["든든"], way:["배달","외식"], tip:"김장철엔 보쌈이 진리" },
+  { n:"보쌈", only:"저녁", e:"🥬", cat:"한식", mood:["든든"], way:["배달","외식"], tip:"김장철엔 보쌈이 진리" },
   { n:"떡볶이", e:"🍢", cat:"분식", mood:["매콤","가볍게"], way:["배달","외식","집밥"], tip:"튀김 섞어서 순대까지" },
   { n:"김밥 + 라면", e:"🍙", cat:"분식", mood:["가볍게","국물"], way:["외식","집밥"], tip:"실패 없는 조합" },
   { n:"짜장면", e:"🍝", cat:"중식", mood:["든든"], way:["배달","외식"], tip:"탕수육 小 하나 추가 어때요?" },
   { n:"짬뽕", e:"🦐", cat:"중식", mood:["국물","매콤"], way:["배달","외식"], tip:"해장도 되고 저녁도 되고" },
   { n:"마라탕", e:"🥵", cat:"중식", mood:["국물","매콤"], way:["배달","외식"], tip:"맵기 1단계부터 도전" },
-  { n:"양꼬치", e:"🍢", cat:"중식", mood:["든든"], way:["외식"], tip:"칭따오 한 병 곁들여" },
+  { n:"양꼬치", only:"저녁", e:"🍢", cat:"중식", mood:["든든"], way:["외식"], tip:"칭따오 한 병 곁들여" },
   { n:"초밥", e:"🍣", cat:"일식", mood:["가볍게"], way:["외식","배달"], tip:"오늘은 나에게 주는 선물" },
   { n:"돈카츠", e:"🍱", cat:"일식", mood:["든든"], way:["외식","배달"], tip:"등심 vs 안심, 고민은 둘 다" },
   { n:"라멘", e:"🍜", cat:"일식", mood:["국물","든든"], way:["외식"], tip:"면 굵기는 바리카타로" },
@@ -218,14 +233,21 @@ const MENUS = [
   { n:"규동", e:"🍚", cat:"일식", mood:["든든","가볍게"], way:["외식","배달"], tip:"온센타마고 추가" },
   { n:"파스타", e:"🍝", cat:"양식", mood:["가볍게"], way:["외식","집밥","배달"], tip:"크림? 토마토? 오일? 고르는 것도 재미" },
   { n:"피자", e:"🍕", cat:"양식", mood:["든든"], way:["배달"], tip:"콜라는 제로로 양심 챙기기" },
-  { n:"스테이크", e:"🥩", cat:"양식", mood:["든든"], way:["외식","집밥"], tip:"수고한 날엔 고기 한 덩이" },
+  { n:"스테이크", only:"저녁", e:"🥩", cat:"양식", mood:["든든"], way:["외식","집밥"], tip:"수고한 날엔 고기 한 덩이" },
   { n:"샐러드", e:"🥗", cat:"양식", mood:["가볍게"], way:["배달","집밥"], tip:"가볍게, 그리고 개운하게" },
   { n:"쌀국수", e:"🍲", cat:"아시안", mood:["국물","가볍게"], way:["외식","배달"], tip:"고수는 취향껏" },
   { n:"팟타이", e:"🍤", cat:"아시안", mood:["가볍게"], way:["외식","배달"], tip:"땅콩가루 듬뿍" },
   { n:"카레", e:"🍛", cat:"아시안", mood:["든든","매콤"], way:["외식","집밥","배달"], tip:"집에서 끓이면 내일 아침까지 해결" },
-  { n:"치킨", e:"🍗", cat:"패스트푸드", mood:["든든"], way:["배달"], tip:"반반은 언제나 옳다" },
+  { n:"치킨", only:"저녁", e:"🍗", cat:"패스트푸드", mood:["든든"], way:["배달"], tip:"반반은 언제나 옳다" },
   { n:"햄버거", e:"🍔", cat:"패스트푸드", mood:["든든","가볍게"], way:["배달","외식"], tip:"감튀는 라지로" },
-  { n:"족발", e:"🐷", cat:"한식", mood:["든든"], way:["배달"], tip:"막국수 세트로 주문" },
+  { n:"족발", only:"저녁", e:"🐷", cat:"한식", mood:["든든"], way:["배달"], tip:"막국수 세트로 주문" },
+  { n:"국밥", e:"🍚", cat:"한식", only:"점심", mood:["국물","든든"], way:["외식"], tip:"빨리 먹고 쉬는 시간 확보" },
+  { n:"백반", e:"🍱", cat:"한식", only:"점심", mood:["든든","가볍게"], way:["외식"], tip:"오늘의 메뉴에 운명을 맡기기" },
+  { n:"냉면", e:"🥶", cat:"한식", only:"점심", mood:["가볍게","매콤"], way:["외식"], tip:"물냉 vs 비냉, 그것이 문제로다" },
+  { n:"덮밥", e:"🍛", cat:"일식", only:"점심", mood:["든든","가볍게"], way:["외식","배달"], tip:"사케동, 가츠동, 오늘은 뭘로?" },
+  { n:"샌드위치", e:"🥪", cat:"양식", only:"점심", mood:["가볍게"], way:["외식","배달"], tip:"커피 한 잔 곁들여 가볍게" },
+  { n:"편의점 도시락", e:"🏪", cat:"분식", only:"점심", mood:["가볍게"], way:["외식"], tip:"바쁜 날의 든든한 구원투수" },
+  { n:"쫄면", e:"🍜", cat:"분식", only:"점심", mood:["매콤","가볍게"], way:["외식","배달"], tip:"새콤달콤하게 오후 졸음 퇴치" },
   { n:"부대찌개", e:"🌭", cat:"한식", mood:["국물","매콤","든든"], way:["외식","집밥","배달"], tip:"햄 많이, 라면사리 필수" },
 ];
 
@@ -233,7 +255,7 @@ const CATS = ["한식","중식","일식","양식","분식","아시안","패스�
 const MOODS = [["국물","🍲 국물"],["매콤","🌶️ 매콤"],["든든","💪 든든하게"],["가볍게","🍃 가볍게"]];
 const WAYS = [["전체","전부 OK"],["배달","🛵 배달"],["외식","🚶 나가서"],["집밥","🏠 집에서"]];
 
-const state = { cats: new Set(CATS), moods: new Set(), way: "전체", passed: new Set(), current: null, spinning: false };
+const state = { meal: new Date().getHours() < 15 ? "점심" : "저녁", cats: new Set(CATS), moods: new Set(), way: "전체", passed: new Set(), current: null, spinning: false };
 
 const $ = id => document.getElementById(id);
 
@@ -267,6 +289,7 @@ function renderFilters() {
 
 function candidates() {
   return MENUS.filter(m =>
+    (!m.only || m.only === state.meal) &&
     state.cats.has(m.cat) &&
     (state.moods.size === 0 || [...state.moods].some(x => m.mood.includes(x))) &&
     (state.way === "전체" || m.way.includes(state.way)) &&
@@ -371,9 +394,26 @@ document.addEventListener("keydown", e => {
 });
 
 const d = new Date();
-$("today").textContent = `${d.getMonth()+1}월 ${d.getDate()}일 ${"일월화수목금토"[d.getDay()]}요일 저녁`;
+const dateText = `${d.getMonth()+1}월 ${d.getDate()}일 ${"일월화수목금토"[d.getDay()]}요일`;
 
-renderFilters(); updateCount();
+function setMeal(meal) {
+  if (state.spinning) return;
+  state.meal = meal;
+  $("mealLunch").setAttribute("aria-pressed", meal === "점심");
+  $("mealDinner").setAttribute("aria-pressed", meal === "저녁");
+  $("title").textContent = `오늘 ${meal} 뭐 먹지?`;
+  $("today").textContent = `${dateText} ${meal}`;
+  // 식사가 바뀌면 결과·패스 목록 초기화
+  state.passed.clear(); state.current = null;
+  $("reel").innerHTML = itemHTML({ e: meal === "점심" ? "☀️" : "🌙", n: "두구두구…" });
+  $("slot").classList.add("idle");
+  $("meta").innerHTML = ""; $("after").hidden = true; $("spin").textContent = "메뉴 뽑기";
+  renderHistory(); updateCount();
+}
+$("mealLunch").addEventListener("click", () => setMeal("점심"));
+$("mealDinner").addEventListener("click", () => setMeal("저녁"));
+
+renderFilters(); setMeal(state.meal);
 </script>
 </body>
 </html>
